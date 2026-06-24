@@ -2,42 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BPDB Token Viewer - Dark Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BPDB Token Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
-        /* পুরো ওয়েবসাইটের ব্যাকগ্রাউন্ড ও টেক্সট সম্পূর্ণ ডার্ক */
-        body {
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
             background-color: #0b0c10;
+            overflow: hidden;
+        }
+
+        body {
             color: #c5c6c7;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            box-sizing: border-box;
+            padding: 10px;
         }
 
         .container {
             background-color: #1f2833;
-            padding: 30px;
+            padding: 15px 20px;
+            padding-top: 13px;
+            margin-top: 18px;
             border-radius: 16px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
             width: 100%;
-            max-width: 480px;
+            max-width: 400px;
             text-align: center;
             border: 1px solid #2f3e46;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            max-height: 95vh;
         }
 
         h2 {
             color: #66fcf1;
-            margin-bottom: 20px;
-            font-size: 24px;
+            margin: 0 0 5px 0;
+            font-size: 20px;
         }
 
         textarea {
             width: 100%;
-            height: 220px;
+            height: 226px;
             background-color: #0b0c10;
             border: 2px solid #45a29e;
             border-radius: 8px;
@@ -45,7 +57,7 @@
             padding: 12px;
             font-size: 16px;
             box-sizing: border-box;
-            resize: vertical;
+            resize: none;
         }
 
         textarea:focus {
@@ -53,108 +65,192 @@
             border-color: #ff3333;
         }
 
-        /* লাল সতর্কবার্তা */
-        .warning {
-            color: #ff4d4d;
-            font-weight: bold;
-            margin: 15px 0;
-            font-size: 16px;
-            letter-spacing: 0.5px;
+        .warning-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 8px 0;
+            width: 100%;
+            box-sizing: border-box;
         }
 
-        /* লাল এন্টার বাটন */
+        .input-action-buttons {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .btn-input-clear {
+            background: transparent;
+            color: #ffacac;
+            border: 1px solid #ff4d4d;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+        }
+
+        .btn-input-clear:hover {
+            background-color: #b84f25;
+            color: #ffffff;
+        }
+
+        .btn-scan {
+            background: transparent;
+            color: #66fcf1;
+            border: 1px solid #45a29e;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            flex: 2;
+        }
+
+        .btn-scan:hover {
+            background-color: #45a29e;
+            color: #0b0c10;
+        }
+
+        .btn-scan:disabled {
+            color: #a5a5a5;
+            border-color: #2f3e46;
+            cursor: not-allowed;
+            background-color: rgba(255,255,255,0.05);
+        }
+
         .btn-done {
             background-color: #ff3333;
             color: white;
             border: none;
-            padding: 14px 35px;
+            padding: 12px 35px;
             font-size: 18px;
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
             width: 100%;
-            margin-top: 5px;
             box-shadow: 0 4px 12px rgba(255, 51, 51, 0.3);
         }
 
-        .btn-done:hover {
-            background-color: #cc0000;
-        }
-        
-        .btn-done:active {
-            transform: scale(0.98);
+        #input-page, #result-page {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            justify-content: space-between;
         }
 
-        /* রেজাল্ট পেজ সেকশন */
         #result-page {
             display: none;
         }
 
-        /* ডার্ক থিমের জন্য সংখ্যার মেইন বক্স */
+        .display-wrapper {
+            position: relative;
+            width: fit-content;
+            margin: 7px auto;
+            padding-right: 50px;
+        }
+
         .token-vertical-box {
             background-color: #0b0c10;
-            border: 3px solid #66fcf1; /* গ্লোয়িং বর্ডার যাতে স্পষ্ট দেখা যায় */
+            border: 3px solid #66fcf1;
             border-radius: 12px;
-            padding: 25px;
-            margin: 20px auto;
+            margin-left: 50px;
+            padding: 10px 25px;
             width: fit-content;
-            min-width: 180px;
+            min-width: 150px;
             box-shadow: 0 0 15px rgba(102, 252, 241, 0.2);
         }
 
-        /* আপনার ছবির মতো ৪টি করে সংখ্যা নিচে নিচে দেখানোর ডিজাইন */
         .digit-block {
-            font-size: 48px; /* ফন্ট সাইজ আরও বড় করা হয়েছে স্পষ্টতার জন্য */
+            font-size: 50px; 
             font-weight: 800;
-            color: #ffffff; /* একদম উজ্জ্বল সাদা টেক্সট */
-            font-family: 'Courier New', Courier, monospace; /* ফন্ট স্টাইল পরিবর্তন করা হয়েছে যাতে ০ এবং ৮ আলাদা চেনা যায় */
-            margin: 15px 0;
-            padding: 4px 12px;
-            background-color: #1f2833; /* ব্লকের ব্যাকগ্রাউন্ড হালকা ডার্ক */
+            color: #ffffff; 
+            font-family: 'Courier New', Courier, monospace;
+            margin: 6px 0;
+            padding: 18px 0px;
+            background-color: #1f2833; 
             border-radius: 6px;
             letter-spacing: 3px;
             border: 1px solid #45a29e;
         }
 
-        /* নেভিগেশন বাটনসমূহ */
+        .btn-erase {
+            position: absolute;
+            left: 200pt;
+            bottom: 12px;
+            background-color: transparent;
+            color: #ffacac;
+            border: 2px solid #ff4d4d;
+            padding: 2px 5px;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            writing-mode: horizontal-tb;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-erase:hover {
+            background-color: #b84f25;
+            color: #ffffff;
+        }
+
         .nav-buttons {
             display: flex;
             justify-content: space-between;
-            margin-top: 25px;
-            gap: 15px;
+            margin-top: 5px;
+            gap: 12px;
         }
 
         .btn-nav {
             background-color: #45a29e;
             color: #0b0c10;
             border: none;
-            padding: 12px 25px;
-            font-size: 16px;
+            padding: 10px 20px;
+            font-size: 15px;
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
             flex: 1;
-            transition: 0.2s;
-        }
-
-        .btn-nav:hover {
-            background-color: #66fcf1;
-            color: #0b0c10;
         }
 
         .btn-nav:disabled {
             background-color: #2f3e46;
             color: #1f2833;
             cursor: not-allowed;
-            border: none;
         }
 
         .page-info {
             display: block;
-            margin-top: 15px;
-            font-size: 14px;
+            margin-top: 5px;
+            font-size: 13px;
             color: #a5a5a5;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding-bottom: 35px; 
+            }
+            .container {
+                max-height: 92vh;
+            }
+            .digit-block {
+                font-size: 48px;
+                margin: 5px 0;
+            }
         }
     </style>
 </head>
@@ -164,17 +260,26 @@
     
     <div id="input-page">
         <h2>BPDB Prepaid Token Parser</h2>
-        <textarea id="raw-input" placeholder="এখানে আপনার টোকেনগুলো পেস্ট করুন..."></textarea>
-        
-        <p class="warning">Input 20 digits and press the red enter button.</p>
+        <textarea id="raw-input" placeholder="Paste your tokens here or Upload image...."></textarea>
+         <div class="warning-container">
+            <input type="file" id="gallery-pick-input" accept="image/*" style="display: none;" onchange="scanImage(this)">
+            
+            <div class="input-action-buttons">
+                <button class="btn-scan" id="scan-btn" onclick="document.getElementById('gallery-pick-input').click()">Upload Image 🖼️</button>
+                <button class="btn-input-clear" onclick="clearInputOnly()" title="Clear Input">Erase</button>
+            </div>
+        </div>       
         <button class="btn-done" onclick="processTokens()">Done</button>
     </div>
 
     <div id="result-page">
-        <p class="warning">Input 20 digits and press the red enter button.</p>
+        <p class="warning" style="color: #ff4d4d; font-weight: bold; margin: 0; font-size: 13px; letter-spacing: 0.5px;">Input 20 digits and press the red enter button.</p>
         
-        <div class="token-vertical-box" id="token-display-box">
+        <div class="display-wrapper">
+            <div class="token-vertical-box" id="token-display-box">
             </div>
+            <button class="btn-erase" onclick="eraseAll()">Erase</button>
+        </div>
 
         <div class="nav-buttons">
             <button class="btn-nav" id="prev-btn" onclick="prevToken()">Previous</button>
@@ -183,7 +288,7 @@
         
         <span class="page-info" id="page-indicator">Token 1 of 1</span>
         
-        <button class="btn-nav" style="background-color: #333; color: #fff; margin-top: 15px; width: 100%;" onclick="goBack()">Back to Input</button>
+        <button class="btn-nav" style="background-color: #333; color: #fff; margin-top: 8px; width: 100%; flex: none;" onclick="goBack()">Back to Input</button>
     </div>
 
 </div>
@@ -192,20 +297,80 @@
     let allTokens = [];
     let currentIndex = 0;
 
+    function clearInputOnly() {
+        document.getElementById('raw-input').value = '';
+        document.getElementById('raw-input').focus();
+    }
+
+    async function scanImage(input) {
+        if (!input.files || !input.files[0]) return;
+        
+        const file = input.files[0];
+        const scanBtn = document.getElementById('scan-btn');
+        const rawInput = document.getElementById('raw-input');
+        
+        scanBtn.disabled = true;
+        scanBtn.textContent = 'Processing...';
+
+        try {
+            const result = await Tesseract.recognize(file, 'eng');
+            let detectedText = result.data.text;
+
+            // ১. লাইন বা কমা অনুযায়ী আলাদা আলাদা টেক্সট ব্লক তৈরি করা
+            let lines = detectedText.split(/[\n\r,]+/);
+            let foundTokens = [];
+
+            lines.forEach(line => {
+                // ২. ড্যাশ বা স্পেসের ভুল এড়িয়ে প্রতিটি লাইনে ধারাবাহিক ২০টি সংখ্যার ব্লক খোঁজা
+                // এটি মিটার আইডি (১২ ডিজিট) বা টাকার পরিমাণকে স্বয়ংক্রিয়ভাবে বাদ দেয়
+                let tokenPattern = /(?:\d[\s-]*){20}/g;
+                let matches = line.match(tokenPattern);
+
+                if (matches) {
+                    matches.forEach(match => {
+                        let cleanNum = match.replace(/[^0-9]/g, '');
+                        
+                        if (cleanNum.length === 20) {
+                            let parts = cleanNum.match(/.{1,4}/g);
+                            if (parts && parts.length === 5) {
+                                foundTokens.push(parts.join('-'));
+                            }
+                        }
+                    });
+                }
+            });
+
+            if (foundTokens.length > 0) {
+                rawInput.value = foundTokens.join('\n');
+                processTokens();
+            } else {
+                alert("Could not detect any valid 20-digit tokens. Please ensure the image is clear and focused.");
+                rawInput.placeholder = 'Paste your tokens here....';
+            }
+        } catch (error) {
+            console.error(error);
+            alert("An error occurred while reading the image.");
+            rawInput.placeholder = 'Paste your tokens here....';
+        } finally {
+            scanBtn.disabled = false;
+            scanBtn.textContent = 'Upload Image 🖼️';
+            input.value = ''; 
+        }
+    }
+
     function processTokens() {
         const inputText = document.getElementById('raw-input').value;
         
-        // শুধুমাত্র ২০ ডিজিটের টোকেন খুঁজে বের করার রিজেক্স
         const tokenRegex = /\b\d{4}-\d{4}-\d{4}-\d{4}-\d{4}\b/g;
         allTokens = inputText.match(tokenRegex) || [];
 
         if (allTokens.length === 0) {
-            alert("কোনো বৈধ টোকেন খুঁজে পাওয়া যায়নি! সঠিক টোকেন ইনপুট দিন।");
+            alert("No valid token found! Please input a valid 20-digit token.");
             return;
         }
 
         document.getElementById('input-page').style.display = 'none';
-        document.getElementById('result-page').style.display = 'block';
+        document.getElementById('result-page').style.display = 'flex';
         
         currentIndex = 0;
         showCurrentToken();
@@ -216,10 +381,8 @@
         const pageIndicator = document.getElementById('page-indicator');
         displayBox.innerHTML = '';
 
-        // বর্তমান টোকেন ভেঙে ৫টি পার্ট করা
         const tokenParts = allTokens[currentIndex].split('-');
 
-        // লুপ চালিয়ে ডার্ক ব্লকে সংখ্যাগুলো নিচে নিচে বসানো
         tokenParts.forEach(part => {
             const block = document.createElement('div');
             block.className = 'digit-block';
@@ -227,7 +390,6 @@
             displayBox.appendChild(block);
         });
 
-        // ইন্ডিকেটর এবং বাটন স্টেট আপডেট
         pageIndicator.textContent = `Token ${currentIndex + 1} of ${allTokens.length}`;
 
         document.getElementById('prev-btn').disabled = (currentIndex === 0);
@@ -250,7 +412,16 @@
 
     function goBack() {
         document.getElementById('result-page').style.display = 'none';
-        document.getElementById('input-page').style.display = 'block';
+        document.getElementById('input-page').style.display = 'flex';
+    }
+
+    function eraseAll() {
+        document.getElementById('raw-input').value = '';
+        allTokens = [];
+        currentIndex = 0;
+        
+        document.getElementById('result-page').style.display = 'none';
+        document.getElementById('input-page').style.display = 'flex';
     }
 </script>
 
